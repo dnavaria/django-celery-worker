@@ -1,0 +1,55 @@
+version: "3.4"
+services:
+  redis:
+    container_name: redis
+    image: redis:7.0.11-alpine
+
+  django:
+    container_name: django-celery-app
+    build:
+      context: ./dcelery
+      dockerfile: Dockerfile
+    command: python manage.py runserver 0.0.0.0:9999
+    volumes:
+      - ./dcelery:/usr/src/app/
+    ports:
+      - "9999:9999"
+    environment:
+      - DJANGO_SETTINGS_MODULE=dcelery.settings
+      - DEBUG=1
+      - ALLOWED_HOSTS=localhost, 127.0.0.1
+      - SECRET_KEY=165465asd465as4dasffgsad5465asd456a4sd213asd
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  celery-worker-1:
+    container_name: celery-worker-1
+    build:
+      context: ./dcelery
+      dockerfile: Dockerfile
+    command: celery --app=dcelery worker -l INFO -Q celery,celery:1,celery:2,celery:3
+    volumes:
+      - ./dcelery:/usr/src/app/
+    environment:
+      - DJANGO_SETTINGS_MODULE=dcelery.settings
+      - DEBUG=1
+      - SECRET_KEY=165465asd465as4dasffgsad5465asd456a4sd213asd
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+    depends_on:
+      - redis
+
+  # celery-worker:
+  #   container_name: celery-worker
+  #   build:
+  #     context: ./celeryworker
+  #     dockerfile: Dockerfile
+  #   command: celery -A tasks worker -l INFO -Q queue2
+  #   volumes:
+  #     - ./celeryworker:/usr/src/app/
+  #   depends_on:
+  #     - redis
+  #     - django
