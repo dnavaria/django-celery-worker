@@ -1,7 +1,7 @@
 import time
 from celery import shared_task
 
-@shared_task
+@shared_task(task_rate_limit='5/m')
 def task1(queue='celery'):
     time.sleep(2)
     return
