@@ -1,5 +1,17 @@
 version: "3.4"
 services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq
+      
   redis:
     container_name: redis
     image: redis:7.0.11-alpine
@@ -19,28 +31,34 @@ services:
       - DEBUG=1
       - ALLOWED_HOSTS=localhost, 127.0.0.1
       - SECRET_KEY=165465asd465as4dasffgsad5465asd456a4sd213asd
-      - CELERY_BROKER_URL=redis://redis:6379/0
+      # - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
+      - rabbitmq
 
   celery-worker-1:
     container_name: celery-worker-1
     build:
       context: ./dcelery
       dockerfile: Dockerfile
-    command: celery --app=dcelery worker -l INFO -Q celery,celery:1,celery:2,celery:3
+    # command: celery --app=dcelery worker -l INFO -Q celery,celery:1,celery:2,celery:3
+    command: celery --app=dcelery worker -l INFO -Q tasks
     volumes:
       - ./dcelery:/usr/src/app/
     environment:
       - DJANGO_SETTINGS_MODULE=dcelery.settings
       - DEBUG=1
       - SECRET_KEY=165465asd465as4dasffgsad5465asd456a4sd213asd
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # - CELERY_BROKER_URL=redis://redis:6379/0
+      # - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672
+      # - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - ALLOWED_HOSTS=localhost,127.0.0.1
     depends_on:
       - redis
+      - django
+      - rabbitmq
 
   # celery-worker:
   #   container_name: celery-worker
