@@ -44,9 +44,11 @@ def add_numbers(x, y):
     return x + y
 
 @app.task(queue='tasks')
-def t1():
-    time.sleep(2)
-    return
+def t1(a, b, message=None):
+    result = a + b
+    if message:
+        result = f"{message}: {result}"
+    return result
 
 @app.task(queue='tasks')
 def t2():
@@ -59,3 +61,17 @@ def t3():
     return
 
 app.autodiscover_tasks()
+
+
+# synchronous task execution 
+def execute_sync():
+    result = t1.apply_async(args=[5,10], kwargs={"message": "The sum is"})
+    task_result = result.get()
+    print("task is running synchronously")
+    print(task_result)
+    
+# asynchronous task execution
+def execute_async():
+    result = t1.apply_async(args=[5,10], kwargs={"message": "The sum is"})
+    print("task is running asynchronously")
+    print("Task ID", result.task_id)
