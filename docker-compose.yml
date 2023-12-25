@@ -1,5 +1,15 @@
 version: "3.4"
 services:
+
+  flower:
+    image: mher/flower
+    container_name: flower
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:management
@@ -29,7 +39,7 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=dcelery.settings
       - DEBUG=1
-      - ALLOWED_HOSTS=localhost, 127.0.0.1
+      - ALLOWED_HOSTS=hyperv.dev-server-1.internal, localhost, 127.0.0.1
       - SECRET_KEY=165465asd465as4dasffgsad5465asd456a4sd213asd
       # - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672
@@ -44,7 +54,7 @@ services:
       context: ./dcelery
       dockerfile: Dockerfile
     # command: celery --app=dcelery worker -l INFO -Q celery,celery:1,celery:2,celery:3
-    command: celery --app=dcelery worker -l INFO -Q tasks
+    command: celery --app=dcelery worker --hostname=celeryWorker1@%h -l INFO -Q tasks
     volumes:
       - ./dcelery:/usr/src/app/
     environment:
